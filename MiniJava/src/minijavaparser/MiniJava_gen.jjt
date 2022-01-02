@@ -1,0 +1,484 @@
+options
+{
+	LOOKAHEAD = 1; //we can use LOOKAHEAD=2, BUT THERE MAY BE PROBLEMS WITH THE	 "FORCE_LA_CHECK", WHICH SEEMS TO GIVE AN ERROR REGARDLESS THE USE OF THE LOOKAHEAD >1 OPTION
+	FORCE_LA_CHECK = false;
+	CHOICE_AMBIGUITY_CHECK = 2;
+	OTHER_AMBIGUITY_CHECK = 1;
+	DEBUG_PARSER = false;
+	
+	TRACK_TOKENS = true;
+	TOKEN_EXTENDS = "progen.Entity";
+	
+	NODE_CLASS = "progen.ProgenNode";
+	NODE_EXTENDS = "progen.Entity";
+
+	MULTI = true;
+	VISITOR = true;
+	NODE_DEFAULT_VOID = true;
+}
+
+PARSER_BEGIN(MiniJava)
+package minijavaparser;
+
+import java.io.*;
+
+public class MiniJava
+{	
+	public static void main(String args[]) 
+	{
+	    System.err.println("Reading from standard input...");
+	    try 
+	    {
+	      	MiniJava p = new MiniJava(new FileInputStream(new File("./samples/test01.java")));
+	    	ASTProgram root = p.Program();
+	    	root.dump(">");
+			System.out.println("Thank you.");
+	    } 
+	    catch (Exception e) 
+	    {									      
+			System.err.println("Oops.");
+			System.err.println(e.getMessage());
+			e.printStackTrace();
+	    }
+	}
+}
+
+PARSER_END(MiniJava)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+TOKEN : /* KEYWORDS */
+{
+  <CLASS: "class">
+| <PUBLIC: "public">
+| <STATIC: "static">
+| <VOID: "void">
+| <MAIN: "main">
+| <STRING: "String">
+| <EXTENDS: "extends">
+| <IF: "if">
+| <ELSE: "else">
+| <WHILE: "while">
+| <PRINTLN: "System.out.println">
+| <RETURN: "return">
+| <INT: "int">
+| <BOOLEAN: "boolean">
+| <LENGTH: "length">
+| <TRUE: "true">
+| <FALSE: "false">
+| <THIS: "this">
+| <NEW: "new">
+} 
+
+TOKEN : /* IDENTIFIERS */
+{
+  < ID: <LETTER> (<LETTER>|<DIGIT>)* >
+|
+  < INTEGER_LITERAL: (< LETTER >)+ >
+|
+  < #LETTER: ["_","a"-"z","A"-"Z"] >
+|
+  < #DIGIT: ["0"-"9"] >
+}
+
+TOKEN : /* OPERATORS */
+{
+  < ADD: "+" >
+| < SUB: "-" >
+| < MUL: "*" >
+| < DIV: "/" >
+| < GT: ">" >
+| < GE: ">=" >
+| < LT: "<" >
+| < LE: "<=" >
+| < EQ: "==" >
+| < NE: "!=" >
+| < NOT: "!" >
+| < AND: "&&" >
+| < OR: "||" >
+}
+
+TOKEN : /* SEPARATORS */
+{
+  <LBRACKET: "[">
+| <RBRACKET: "]"> 
+| <LPAREN: "(">
+| <RPAREN: ")">
+| <LACCOLADE: "{">
+| <RACCOLADE: "}">
+| <COMMA: ",">
+| <SEMICOLON: ";">
+| <DOT: "." >
+| <ATRIB: "=" >
+}
+
+TOKEN: //SPECIAL
+{
+  <NONE: ~[] >
+}
+
+ASTProgram Program() #Program:
+{
+}
+{
+	MainClass() ( ClassDecl() )* <EOF>
+  	{
+  		return jjtThis; 
+  	}
+}
+
+void MainClass() #MainClass:
+{
+}
+{ 
+	< CLASS > < ID > "{"  MainFuncDecl() "}"
+}
+
+void MainFuncDecl() #MainFuncDecl:
+{
+}
+{
+	< PUBLIC > < STATIC > < VOID > < MAIN > "(" < STRING > "[" "]" < ID > ")" "{"  Statement() "}"
+}
+
+void  ClassDecl() #ClassDecl:
+{
+}
+{
+//  LOOKAHEAD(3)
+//	< CLASS > < ID > [] "{" (VarDecl())*  (MethodDecl())* "}"
+//| 	< CLASS > < ID > < EXTENDS > < ID > "{" (VarDecl())*  (MethodDecl())* "}"
+	< CLASS > < ID > [< EXTENDS > < ID >] "{" (VarDecl())*  (MethodDecl())* "}"
+}
+
+void VarDecl() #VarDecl:
+{
+}
+{
+	Type() < ID > ";"
+}
+
+void MethodDecl() #MethodDecl:
+{
+}
+{
+	"public" Type() < ID > "(" FormalList() ")"
+	"{" (VarDecl())* (Statement())* < RETURN > Exp() ";" "}"
+}
+
+void FormalList()#FormalList:
+{}
+{
+	Type() < ID > (FormalRest())*
+| 	< NONE >
+}
+
+void FormalRest()#FormalRest:
+{}
+{
+	< COMMA > Type() < ID >
+}
+
+void Type()#VarType:
+{
+}
+{
+  LOOKAHEAD(2)
+	< INT >
+| 	< INT > "[" "]"
+| 	< STRING >
+| 	< BOOLEAN >
+}
+
+void Statement()#Statement:
+{}
+{
+	"{" Statement() "}"
+|	< IF > "(" Exp() ")" Statement() < ELSE > Statement()
+| 	< WHILE > "(" Exp() ")" Statement()
+|	< PRINTLN > "(" Exp() ")" ";"
+|	< ID > ("[" Exp() "]")? "=" Exp() ";"
+}
+
+void Exp()#void: 
+{}
+{
+   Cond()
+}
+
+void Cond() #void:
+{ }
+{
+	OrCond()
+}
+
+void OrCond() #OrCond:
+{}
+{
+	AndCond() (< OR > AndCond())*
+}
+
+void AndCond() #AndCond:
+{ }
+{
+	LogFactor() (< AND > LogFactor())*
+}
+
+void LogFactor() #LogFactor:
+{}
+{
+	< TRUE >
+| 	< FALSE >
+|   RelExp()
+}
+
+void RelExp() #RelExp:
+{ }
+{
+	ArExp() (RelOp() ArExp())?
+
+}
+
+void RelOp()#AdOp:
+{ }
+{
+	< LT >
+| 	< LE >
+| 	< GT >
+| 	< GE >
+| 	< EQ >
+| 	< NE >
+}
+
+void ArExp()#ArExp:
+{ }
+{
+	Term() (AdOp() Term())*
+
+}
+
+void AdOp()#AdOp:
+{ }
+{
+	< ADD >
+| 	< SUB >
+}
+
+void Term()#Term:
+{ }
+{
+	Factor() (MulOp() Factor())*	
+}
+
+void MulOp()#MulOp:
+{ }
+{
+	< MUL >
+| 	< DIV >
+}
+
+void Factor()#Factor:
+{ }
+{
+	Subfactor() (LOOKAHEAD(2) FactorP())*   //am primit eroare fara lookahead aici, desi am in FactorP lookahead oricum
+}
+
+void FactorP()#FactorRest:
+{ }
+{
+  	LOOKAHEAD(2)
+	"." < ID > "(" ExpList() ")"
+| 	"." < LENGTH >
+| 	"[" Exp() "]"
+}
+ 
+void Subfactor()#ExpFinal:
+{}
+{
+  	< ID >
+| 	< THIS >
+| 	< INTEGER_LITERAL >
+| 	LOOKAHEAD(2)
+	< NEW > < INT > "[" Exp() "]"
+| 	< NEW > < ID > "(" ")"
+| 	"(" Exp() ")"
+|   < NOT > Factor()
+}
+
+void ExpList()#ExpList:
+{}
+{
+	Exp() ("," Exp())*
+| 	< NONE >
+}
+
+
+/* grammar
+1. gramatica implementata
+    Program ::= MainClass ClassDecl*
+
+  MainClass ::= class id { public static void main ( String [] id )
+               { Statement }}
+
+  ClassDecl ::= class id [extends id] { VarDecl* MethodDecl* }
+
+    VarDecl ::= Type id ;
+
+ MethodDecl ::= public Type id ( FormalList )
+               { VarDecl* Statement* return Exp ;}
+
+ FormalList ::= Type id FormalRest*
+           	::=
+
+ FormalRest ::=, Type id
+
+       Type ::= int []
+           	::= boolean
+           	::= int
+           	::= id
+
+  Statement ::= { Statement* }
+           	::= if ( Exp ) Statement else Statement
+           	::= while ( Exp ) Statement
+           	::= System.out.println ( Exp ) ;
+           	::= id = Exp ;
+           	::= id [ Exp ]= Exp ;
+
+		Exp ::= Condition
+
+  Condition ::= OrCond
+
+	 OrCond ::= AndCond ("||" AndCond)*
+
+ 	AndCond ::= LogFactor ("&&" LogFactor)*
+
+  LogFactor ::= RelExp | "true" | "false"
+
+	 RelExp ::= ArExp [RelOp ArExp] 
+
+	  RelOp ::= < | > | < = | >= | == | !=
+
+	  ArExp ::= Term (AdOp Term)*
+
+	   AdOp ::= "+" | "-"
+
+	   Term ::= Factor (MulOp Factor)*
+
+	  MulOp ::= "*" | "/"
+
+	 Factor ::= AtFact Rest*
+	 		::= INTEGER LITERAL //l-am pus in factor pt ca nu poate fi urmat de nimic, spre deosebire the this sau id
+
+	   Rest ::= "." id "(" ExpList ")"
+			::= "." "length"
+			::= "[" Exp "]"
+
+	 AtFact ::= id | this 
+	 		::= "new" "int" "[" Exp " ]"
+	  		::= "new" "id" "(" ")"
+	 		::= "(" Exp ")"
+			::= "!" Factor
+
+	ExpList ::= Exp ("," Exp)*
+           	::=    //epsilon
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2. gramatica primita
+   Program ::= MainClass ClassDecl*
+
+ MainClass ::= class id { public static void main ( String [] id )
+               { Statement }}
+
+ ClassDecl ::= class id { VarDecl* MethodDecl* }
+           ::= class id extends id { VarDecl* MethodDecl* }
+
+   VarDecl ::= Type id ;
+
+MethodDecl ::= public Type id ( FormalList )
+               { VarDecl* Statement* return Exp ;}
+
+FormalList ::= Type id FormalRest*
+           ::=
+
+FormalRest ::=, Type id
+
+      Type ::= int []
+           ::= boolean
+           ::= int
+           ::= id
+
+ Statement ::= { Statement* }
+           ::= if ( Exp ) Statement else Statement
+           ::= while ( Exp ) Statement
+           ::= System.out.println ( Exp ) ;
+           ::= id = Exp ;
+           ::= id [ Exp ]= Exp ;
+
+       Exp - ::= Exp op Exp
+           ::= Exp [ Exp ]
+           ::= Exp . length
+           ::= Exp . id ( ExpList )
+           - ::= INTEGER LITERAL
+           - ::= true
+           - ::= false
+           - ::= id
+           - ::= this
+           - ::= new int [ Exp ]
+           - ::= new id ()
+           - ::= ! Exp
+           - ::= ( Exp )
+
+   ExpList ::= Exp ExpRest*
+           ::=
+
+  ExpRest  ::=  ,Exp
+
+
+-------------------------------------------------- expressions----------------------------------------------
+
+Exp ::= Condition
+
+Condition ::= LogExp | "!" LogExp
+
+LogExp ::= LogExpTerm ("||" LogExpTerm)*
+
+LogExpTerm ::= LogExpFactor ("&&" LogExpFactor)*
+
+LogExpFactor ::= "(" LogExp ")" | RelExp | "true" | "false"
+
+RelExp ::= ArExp RelOp ArExp | ArExp  - > ArExp (RelOp ArExp)*
+
+RelOp ::= <  | > | < = | >= | == | !=
+
+ArExp ::= ArExp + Term | ArExp - Term | Term   -> Term ([+|-] Term)*
+
+Term ::= Term '*' Factor | Term '/' Factor | Factor -> Factor ([*|/] Factor)*
+
+Factor ::= id | this | OpNew | "(" ArExp ")" | INTEGER LITERAL | Exp "." Exp "(" ExpList ")" | Exp "." "length" | Exp "[" Exp "]"
+
+OpNew ::= "new" "int" "[" Exp " ]"
+	  ::= "new" "id" "(" ")"
+	  
+   ExpList ::= Exp ExpRest*
+           ::=
+
+  ExpRest  ::=  ,Exp
+
+simplificare:
+
+- elimin Condition
+"(" LogExp ")" si "(" ArExp ")" pot intra in conflict (explicat mai jos)
+	exp - > cond - > logExp - > LegExpTerm - > LogExpFactor- > "(" LogExp ")" - > "(" LogExpTerm ")" - > "(" LogExpFactor ")" - > "(" RelExp ")" - > "(" ArExp ")" - > ...
+	exp - > cond - > logExp - > LegExpTerm - > LogExpFactor- > RelExp -> ArExp - > Term - > Factor - > "(" ArExp ")" - > ...
+
+
+LogTerm.'!'Cond() - > Term.'!'Term pentru ca genera o eroare de expandare ! x & y se putea expanda ca (!x) & y, dar si incorect !(x & y)
+
+*/
