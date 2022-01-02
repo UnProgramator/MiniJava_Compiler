@@ -6,8 +6,9 @@ class Main
 	}
 }
 
-class Shape extends Object
+class Shape 
 {
+	public int Shape(){return 0;}
 	public int getArea(int a, int b, int c)
 	{
 		return nArea;

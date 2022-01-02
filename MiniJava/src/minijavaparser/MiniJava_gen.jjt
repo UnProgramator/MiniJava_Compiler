@@ -80,7 +80,7 @@ TOKEN : /* IDENTIFIERS */
 {
   < ID: <LETTER> (<LETTER>|<DIGIT>)* >
 |
-  < INTEGER_LITERAL: (< LETTER >)+ >
+  < INTEGER_LITERAL: (< DIGIT >)+ >
 |
   < #LETTER: ["_","a"-"z","A"-"Z"] >
 |
@@ -168,7 +168,7 @@ void MethodDecl() #MethodDecl:
 {
 }
 {
-	"public" Type() < ID > "(" FormalList() ")"
+	"public" Type() < ID > "(" (FormalList())? ")" //original orice functie trebuie sa ia parametrii = > pt proiectul meu am schimbat sa pot avea si functii fara param
 	"{" (VarDecl())* (Statement())* < RETURN > Exp() ";" "}"
 }
 
