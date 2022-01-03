@@ -8,19 +8,24 @@ class Main
 
 class Shape 
 {
-	public int Shape(){return 0;}
+	int[] p;
+	int z;
 	public int getArea(int a, int b, int c)
 	{
-		return nArea;
+		return 243;
 	}
 }
 
 class Rectangle extends Shape
 {
+	Shape q;
 	public int getArea(int a, int b, int c)
 	{
 		int nWidth;
 		int nHeight;
+		int nArea;
+		nArea = nWidth;
+		nArea = nArea * nHeight;
 		
 		return nArea;
 	}

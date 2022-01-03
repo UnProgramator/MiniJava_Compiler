@@ -3,6 +3,7 @@ package main;
 import java.io.*;
 import mainframe.MainFrame;
 import minijavaparser.*;
+import minijavaparser.visitors.*;
 
 public class MainClass 
 {
@@ -12,10 +13,14 @@ public class MainClass
 	    {
 	      	MiniJava p = new MiniJava(new FileInputStream(new File("./samples/test01.java")));
 	    	ASTProgram root = p.Program();
-	    	//root.dump(">");
+	    	//root.dump("+");
 
 			MainFrame frame=new MainFrame(root);
-			frame.setVisible(true);			
+			frame.setVisible(true);	
+	    	
+	    	MiniJavaVisitor vis = new DumpVisitor();
+	    	
+	    	root.jjtAccept(vis, null);
 			
 			System.out.println("Thank you.");
 	    } 

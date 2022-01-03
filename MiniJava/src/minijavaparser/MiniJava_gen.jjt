@@ -18,9 +18,10 @@ options
 }
 
 PARSER_BEGIN(MiniJava)
-package minijavaparser;
+package minijavaparser; 
 
 import java.io.*;
+import minijavaparser.visitors.metadata.*;
 
 public class MiniJava
 {	
@@ -125,6 +126,7 @@ TOKEN: //SPECIAL
 
 ASTProgram Program() #Program:
 {
+  MClass declClass;
 }
 {
 	MainClass() ( ClassDecl() )* <EOF>
@@ -135,16 +137,42 @@ ASTProgram Program() #Program:
 
 void MainClass() #MainClass:
 {
+  MClass thisClass = new MClass();
+  Token name;
 }
 { 
-	< CLASS > < ID > "{"  MainFuncDecl() "}"
+	< CLASS > name = < ID > "{"  MainFuncDecl() "}"
+	{
+	  	thisClass.declName = name.image;
+		jjtThis.jjtSetValue(thisClass);
+	}
 }
 
 void MainFuncDecl() #MainFuncDecl:
 {
+  MFunc thisFunc = new MFunc();
+  MVar param = new MVar();
+  Token name,type,args,retType;
 }
 {
-	< PUBLIC > < STATIC > < VOID > < MAIN > "(" < STRING > "[" "]" < ID > ")" "{"  Statement() "}"
+	< PUBLIC > < STATIC > retType = < VOID > name = < MAIN > "(" type = < STRING > "[" "]" args = < ID > ")" "{"  Statement() "}"
+	/*{ //nu cred ca aceste informatii sunt necesare, dar de ce nu? nu este 100% corect, cel mai probabil, dar e o idee
+	    //args
+	  	param.declName=args;
+	  	param.declType=new MType();
+	  	param.declType.declType = type;
+	  	param.declType.isArray = true;
+	  	//func name, declared returned type and class where was declared
+	  	thisFunc.declName = name;
+	  	thisFunc.declRetType = new MType();
+	  	thisFunc.declRetType.declType = retType;
+	  	thisFunc.parent=mainClass;
+	  	//add args to list
+	  	thisFunc.addParam(param);
+	  	jjtThis.jjtSetValue(thisFunc);
+	  	//add method to classes methods
+	  	mainClass.addMethod(thisFunc);
+	}*/
 }
 
 void  ClassDecl() #ClassDecl:
@@ -159,41 +187,78 @@ void  ClassDecl() #ClassDecl:
 
 void VarDecl() #VarDecl:
 {
+  MVar var = new MVar();
+  MType declType;
+  Token name;
 }
 {
-	Type() < ID > ";"
+	declType = Type() name = < ID > ";"
+	{
+		var.declName = name.image;
+		var.declType = declType;
+
+		jjtThis.jjtSetValue(var);
+	}
 }
 
 void MethodDecl() #MethodDecl:
 {
+  MFunc thisFunc = new MFunc();
+  Token name;
+  MType retType;
 }
 {
-	"public" Type() < ID > "(" (FormalList())? ")" //original orice functie trebuie sa ia parametrii = > pt proiectul meu am schimbat sa pot avea si functii fara param
-	"{" (VarDecl())* (Statement())* < RETURN > Exp() ";" "}"
+	"public" retType = Type() name = < ID > "(" FormalList() ")" //original orice functie trebuie sa ia parametrii = > pt proiectul meu am schimbat sa pot avea si functii fara param
+	"{" (LOOKAHEAD(2)VarDecl())* (Statement())* < RETURN > Exp() ";" "}"
+	{
+		thisFunc.declName = name.image;
+		thisFunc.declRetType = retType;
+
+		jjtThis.jjtSetValue(thisFunc);
+	}
 }
 
 void FormalList()#FormalList:
-{}
 {
-	Type() < ID > (FormalRest())*
+  MType type;
+  Token name;
+}
+{
+	type = Type() name = < ID > (FormalRest())*
+	{
+	  	MVar param = new MVar();
+	  	param.declType = type;
+	  	param.declName = name.image;
+	}
 | 	< NONE >
 }
 
 void FormalRest()#FormalRest:
-{}
 {
-	< COMMA > Type() < ID >
+  MType type;
+  Token name;
+}
+{
+	< COMMA > type = Type() name = < ID >
+	{
+	  	MVar param = new MVar();
+	  	param.declType = type;
+	  	param.declName = name.image;
+
+	}
 }
 
-void Type()#VarType:
+MType Type()#VarType:
 {
+  MType declType = new MType();
+  Token type;
 }
 {
   LOOKAHEAD(2)
-	< INT >
-| 	< INT > "[" "]"
-| 	< STRING >
-| 	< BOOLEAN >
+	type = < INT > "[" "]" { declType.declType = type.kind; declType.isArray = true; return declType; }
+| 	type = < INT > { declType.declType = type.kind; return declType; }
+| 	type = < BOOLEAN > { declType.declType = type.kind; return declType; }
+| 	type = < ID > { declType.declType = type.kind; declType.typeName = type.image; return declType; }
 }
 
 void Statement()#Statement:
@@ -299,14 +364,14 @@ void FactorP()#FactorRest:
 }
  
 void Subfactor()#ExpFinal:
-{}
+{Token t;}
 {
-  	< ID >
-| 	< THIS >
-| 	< INTEGER_LITERAL >
+  	t = < ID >
+| 	t = < THIS >
+| 	t = < INTEGER_LITERAL >
 | 	LOOKAHEAD(2)
-	< NEW > < INT > "[" Exp() "]"
-| 	< NEW > < ID > "(" ")"
+	< NEW > t = < INT > "[" Exp() "]"
+| 	< NEW > t = < ID > "(" ")"
 | 	"(" Exp() ")"
 |   < NOT > Factor()
 }
