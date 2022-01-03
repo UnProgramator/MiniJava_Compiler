@@ -264,7 +264,7 @@ MType Type()#VarType:
 void Statement()#Statement:
 {}
 {
-	"{" Statement() "}"
+	"{" (Statement())* "}"
 |	< IF > "(" Exp() ")" Statement() < ELSE > Statement()
 | 	< WHILE > "(" Exp() ")" Statement()
 |	< PRINTLN > "(" Exp() ")" ";"
