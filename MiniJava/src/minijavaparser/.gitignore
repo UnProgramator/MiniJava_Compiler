@@ -41,3 +41,5 @@
 /SimpleNode.java
 /Token.java
 /TokenMgrError.java
+/ASTRelOp.java
+/ASTType.java

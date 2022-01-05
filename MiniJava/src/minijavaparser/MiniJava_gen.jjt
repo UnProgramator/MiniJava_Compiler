@@ -19,9 +19,8 @@ options
 
 PARSER_BEGIN(MiniJava)
 package minijavaparser; 
-
+ 
 import java.io.*;
-import minijavaparser.visitors.metadata.*;
 
 public class MiniJava
 {	
@@ -52,6 +51,8 @@ SKIP :
 | "\t"
 | "\n"
 | "\r"
+| < SINGLE_COMMENT: "//" (~["\r","\n"])* >
+| < MULTI_COMMENT: "/*" (~["*"])* "*" (~["/"] (~["*"])* "*")* "/" >
 }
 
 TOKEN : /* KEYWORDS */
@@ -68,6 +69,7 @@ TOKEN : /* KEYWORDS */
 | <WHILE: "while">
 | <PRINTLN: "System.out.println">
 | <RETURN: "return">
+| < INT_ARR:"int[]" >
 | <INT: "int">
 | <BOOLEAN: "boolean">
 | <LENGTH: "length">
@@ -126,8 +128,7 @@ TOKEN: //SPECIAL
 
 ASTProgram Program() #Program:
 {
-  MClass declClass;
-}
+  }
 {
 	MainClass() ( ClassDecl() )* <EOF>
   	{
@@ -137,138 +138,105 @@ ASTProgram Program() #Program:
 
 void MainClass() #MainClass:
 {
-  MClass thisClass = new MClass();
   Token name;
 }
 { 
 	< CLASS > name = < ID > "{"  MainFuncDecl() "}"
 	{
-	  	thisClass.declName = name.image;
-		jjtThis.jjtSetValue(thisClass);
+		jjtThis.jjtSetValue(name);
 	}
 }
 
 void MainFuncDecl() #MainFuncDecl:
-{
-  MFunc thisFunc = new MFunc();
-  MVar param = new MVar();
-  Token name,type,args,retType;
+{ Token t;
 }
 {
-	< PUBLIC > < STATIC > retType = < VOID > name = < MAIN > "(" type = < STRING > "[" "]" args = < ID > ")" "{"  Statement() "}"
-	/*{ //nu cred ca aceste informatii sunt necesare, dar de ce nu? nu este 100% corect, cel mai probabil, dar e o idee
-	    //args
-	  	param.declName=args;
-	  	param.declType=new MType();
-	  	param.declType.declType = type;
-	  	param.declType.isArray = true;
-	  	//func name, declared returned type and class where was declared
-	  	thisFunc.declName = name;
-	  	thisFunc.declRetType = new MType();
-	  	thisFunc.declRetType.declType = retType;
-	  	thisFunc.parent=mainClass;
-	  	//add args to list
-	  	thisFunc.addParam(param);
-	  	jjtThis.jjtSetValue(thisFunc);
-	  	//add method to classes methods
-	  	mainClass.addMethod(thisFunc);
-	}*/
+	< PUBLIC > < STATIC > < VOID > < MAIN > "(" < STRING > "[" "]" t=< ID > ")" "{"  Statement() "}"
+	{ jjtThis.jjtSetValue(t); }
 }
 
 void  ClassDecl() #ClassDecl:
-{
+{ Token name, extend = null;
 }
 {
 //  LOOKAHEAD(3)
 //	< CLASS > < ID > [] "{" (VarDecl())*  (MethodDecl())* "}"
 //| 	< CLASS > < ID > < EXTENDS > < ID > "{" (VarDecl())*  (MethodDecl())* "}"
-	< CLASS > < ID > [< EXTENDS > < ID >] "{" (VarDecl())*  (MethodDecl())* "}"
+	< CLASS > name  = < ID > [< EXTENDS > extend = < ID >] "{" (VarDecl())*  (MethodDecl())* "}"
+	{
+	  if(extend == null)
+	  	jjtThis.jjtSetValue(new Token[] { name });
+	  else
+	  	jjtThis.jjtSetValue(new Token[] { name, extend });
+	 }
 }
 
 void VarDecl() #VarDecl:
 {
-  MVar var = new MVar();
-  MType declType;
   Token name;
 }
 {
-	declType = Type() name = < ID > ";"
+	Type() name = < ID > ";"
 	{
-		var.declName = name.image;
-		var.declType = declType;
 
-		jjtThis.jjtSetValue(var);
+		jjtThis.jjtSetValue(name);
 	}
 }
 
 void MethodDecl() #MethodDecl:
 {
-  MFunc thisFunc = new MFunc();
   Token name;
-  MType retType;
 }
 {
-	"public" retType = Type() name = < ID > "(" FormalList() ")" //original orice functie trebuie sa ia parametrii = > pt proiectul meu am schimbat sa pot avea si functii fara param
+	"public" Type() name = < ID > "(" (FormalList())? ")" //original orice functie trebuie sa ia parametrii = > pt proiectul meu am schimbat sa pot avea si functii fara param
 	"{" (LOOKAHEAD(2)VarDecl())* (Statement())* < RETURN > Exp() ";" "}"
 	{
-		thisFunc.declName = name.image;
-		thisFunc.declRetType = retType;
-
-		jjtThis.jjtSetValue(thisFunc);
+		jjtThis.jjtSetValue(name);
 	}
 }
 
 void FormalList()#FormalList:
 {
-  MType type;
   Token name;
 }
 {
-	type = Type() name = < ID > (FormalRest())*
-	{
-	  	MVar param = new MVar();
-	  	param.declType = type;
-	  	param.declName = name.image;
-	}
-| 	< NONE >
+	Type() name = < ID > (FormalRest())*
+	{ jjtThis.jjtSetValue(name); }
+//| 	< NONE > //doesn't work very well
 }
 
 void FormalRest()#FormalRest:
 {
-  MType type;
   Token name;
 }
 {
-	< COMMA > type = Type() name = < ID >
-	{
-	  	MVar param = new MVar();
-	  	param.declType = type;
-	  	param.declName = name.image;
-
-	}
+	< COMMA > Type() name = < ID >
+	{ jjtThis.jjtSetValue(name); }
 }
 
-MType Type()#VarType:
+void Type()#Type:
 {
-  MType declType = new MType();
   Token type;
 }
 {
-  LOOKAHEAD(2)
-	type = < INT > "[" "]" { declType.declType = type.kind; declType.isArray = true; return declType; }
-| 	type = < INT > { declType.declType = type.kind; return declType; }
-| 	type = < BOOLEAN > { declType.declType = type.kind; return declType; }
-| 	type = < ID > { declType.declType = type.kind; declType.typeName = type.image; return declType; }
+	type = < INT_ARR > {jjtThis.jjtSetValue(type);}
+| 	type = < INT > {jjtThis.jjtSetValue(type);}
+| 	type = < BOOLEAN > {jjtThis.jjtSetValue(type);}
+| 	type = < ID > {jjtThis.jjtSetValue(type);}
 }
 
 void Statement()#Statement:
-{}
+{Token t; Boolean isIndexed = false;}
 {
 	"{" (Statement())* "}"
-|	< IF > "(" Exp() ")" Statement() < ELSE > Statement()
-| 	< WHILE > "(" Exp() ")" Statement()
-|	< PRINTLN > "(" Exp() ")" ";"
-|	< ID > ("[" Exp() "]")? "=" Exp() ";"
+|	t=< IF > "(" Exp() ")" Statement() < ELSE > Statement() { jjtThis.jjtSetValue(t); }
+| 	t=< WHILE > "(" Exp() ")" Statement() { jjtThis.jjtSetValue(t); }
+|	t=< PRINTLN > "(" Exp() ")" ";" { jjtThis.jjtSetValue(t); }
+| 	LOOKAHEAD(2)
+	t=< ID > "[" ArExp() "]" "=" ArExp() { jjtThis.jjtSetValue(new Object[] { t, true }); }
+|	LOOKAHEAD(2)
+	t=< ID >  "=" Exp() ";" { jjtThis.jjtSetValue(new Object[] { t, false }); }
+| 	Exp() ";" { jjtThis.jjtSetValue("Exp"); } // if we do not have id=fun(), only fun()
 }
 
 void Exp()#void: 
@@ -295,30 +263,27 @@ void AndCond() #AndCond:
 	LogFactor() (< AND > LogFactor())*
 }
 
-void LogFactor() #LogFactor:
+void LogFactor() #void:
 {}
 {
-	< TRUE >
-| 	< FALSE >
-|   RelExp()
+    RelExp()
 }
 
 void RelExp() #RelExp:
 { }
 {
 	ArExp() (RelOp() ArExp())?
-
 }
 
-void RelOp()#AdOp:
-{ }
+void RelOp()#RelOp:
+{ Token t; }
 {
-	< LT >
-| 	< LE >
-| 	< GT >
-| 	< GE >
-| 	< EQ >
-| 	< NE >
+  ( t=< LT >
+| 	t=< LE >
+| 	t=< GT >
+| 	t=< GE >
+| 	t=< EQ >
+| 	t=< NE >) { jjtThis.jjtSetValue(t); }
 }
 
 void ArExp()#ArExp:
@@ -329,10 +294,10 @@ void ArExp()#ArExp:
 }
 
 void AdOp()#AdOp:
-{ }
+{ Token t; }
 {
-	< ADD >
-| 	< SUB >
+	t = < ADD > { jjtThis.jjtSetValue(t. image); }
+|	t = < SUB > { jjtThis.jjtSetValue(t. image); }
 }
 
 void Term()#Term:
@@ -342,45 +307,47 @@ void Term()#Term:
 }
 
 void MulOp()#MulOp:
-{ }
+{ Token t; }
 {
-	< MUL >
-| 	< DIV >
+	t = < MUL > { jjtThis.jjtSetValue(t. image); }
+| 	t = < DIV > { jjtThis.jjtSetValue(t. image); }
 }
 
 void Factor()#Factor:
-{ }
+{ Token t; }
 {
-	Subfactor() (LOOKAHEAD(2) FactorP())*   //am primit eroare fara lookahead aici, desi am in FactorP lookahead oricum
+ 	t = < INTEGER_LITERAL > { jjtThis.jjtSetValue(new Object[] { "Int literal: ", t }); }
+| 	t = < TRUE > { jjtThis.jjtSetValue(new Object[] { "Int literal: ", t }); }
+| 	t = < FALSE > { jjtThis.jjtSetValue(new Object[] { "Int literal: ", t }); }
+| 	Subfactor() (LOOKAHEAD(2) FactorP())*   //am primit eroare fara lookahead aici, desi am in FactorP lookahead oricum
 }
 
 void FactorP()#FactorRest:
-{ }
+{ Token t; }
 {
   	LOOKAHEAD(2)
-	"." < ID > "(" ExpList() ")"
-| 	"." < LENGTH >
-| 	"[" Exp() "]"
+	"." t = < ID > "(" (ExpList())? ")" { jjtThis.jjtSetValue(new Object[] { "CallOp: ", t }); }
+| 	"." < LENGTH >  { jjtThis.jjtSetValue("length"); }
+| 	"[" Exp() "]"  { jjtThis.jjtSetValue("indexed"); }
 }
  
 void Subfactor()#ExpFinal:
 {Token t;}
 {
-  	t = < ID >
-| 	t = < THIS >
-| 	t = < INTEGER_LITERAL >
+  	t = < ID > { jjtThis.jjtSetValue(new Object[] { "Object: ", t }); }
+| 	< THIS > { jjtThis.jjtSetValue("this"); }
 | 	LOOKAHEAD(2)
-	< NEW > t = < INT > "[" Exp() "]"
-| 	< NEW > t = < ID > "(" ")"
-| 	"(" Exp() ")"
-|   < NOT > Factor()
+	< NEW > t = < INT > "[" Exp() "]" { jjtThis.jjtSetValue(new Object[] { "New Int Op", t }); }
+| 	< NEW > t = < ID > "(" ")" { jjtThis.jjtSetValue(new Object[] { "New Op: ", t }); }
+| 	"(" Exp() ")" { jjtThis.jjtSetValue("Paranthesis"); }
+|   t = < NOT > Factor() { jjtThis.jjtSetValue(new Object[] { "NotOp: ", t}); }
 }
 
 void ExpList()#ExpList:
 {}
 {
 	Exp() ("," Exp())*
-| 	< NONE >
+//| 	< NONE > //doesn't work 
 }
 
 
@@ -395,11 +362,11 @@ void ExpList()#ExpList:
 
     VarDecl ::= Type id ;
 
- MethodDecl ::= public Type id ( FormalList )
+ MethodDecl ::= public Type id ( FormalList? )
                { VarDecl* Statement* return Exp ;}
 
  FormalList ::= Type id FormalRest*
-           	::=
+           	---::=---
 
  FormalRest ::=, Type id
 
@@ -413,7 +380,8 @@ void ExpList()#ExpList:
            	::= while ( Exp ) Statement
            	::= System.out.println ( Exp ) ;
            	::= id = Exp ;
-           	::= id [ Exp ]= Exp ;
+           	::= id [ ArExp ]= ArExp ;
+           	::= Exp ; //added in order to call a function and ignore the result
 
 		Exp ::= Condition
 
@@ -423,9 +391,9 @@ void ExpList()#ExpList:
 
  	AndCond ::= LogFactor ("&&" LogFactor)*
 
-  LogFactor ::= RelExp | "true" | "false"
+  LogFactor ::= RelExp
 
-	 RelExp ::= ArExp [RelOp ArExp] 
+	 RelExp ::= ArExp RelOp ArExp
 
 	  RelOp ::= < | > | < = | >= | == | !=
 
@@ -439,8 +407,9 @@ void ExpList()#ExpList:
 
 	 Factor ::= AtFact Rest*
 	 		::= INTEGER LITERAL //l-am pus in factor pt ca nu poate fi urmat de nimic, spre deosebire the this sau id
+	 		::= "true" | "false"
 
-	   Rest ::= "." id "(" ExpList ")"
+	   Rest ::= "." id "(" ExpList? ")"
 			::= "." "length"
 			::= "[" Exp "]"
 
@@ -448,10 +417,10 @@ void ExpList()#ExpList:
 	 		::= "new" "int" "[" Exp " ]"
 	  		::= "new" "id" "(" ")"
 	 		::= "(" Exp ")"
-			::= "!" Factor
+	 		::= "!" Factor
 
 	ExpList ::= Exp ("," Exp)*
-           	::=    //epsilon
+           	---::=    //epsilon---
 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,35 +1,13 @@
 package minijavaparser.visitors;
 
-import minijavaparser.ASTAdOp;
-import minijavaparser.ASTAndCond;
-import minijavaparser.ASTArExp;
-import minijavaparser.ASTClassDecl;
-import minijavaparser.ASTExpFinal;
-import minijavaparser.ASTExpList;
-import minijavaparser.ASTFactor;
-import minijavaparser.ASTFactorRest;
-import minijavaparser.ASTFormalList;
-import minijavaparser.ASTFormalRest;
-import minijavaparser.ASTLogFactor;
-import minijavaparser.ASTMainClass;
-import minijavaparser.ASTMainFuncDecl;
-import minijavaparser.ASTMethodDecl;
-import minijavaparser.ASTMulOp;
-import minijavaparser.ASTOrCond;
-import minijavaparser.ASTProgram;
-import minijavaparser.ASTRelExp;
-import minijavaparser.ASTStatement;
-import minijavaparser.ASTTerm;
-import minijavaparser.ASTVarDecl;
-import minijavaparser.ASTVarType;
-import minijavaparser.MiniJavaVisitor;
-import minijavaparser.SimpleNode;
+import minijavaparser.*;
 
 public class DisplayVisitor implements MiniJavaVisitor {
+	
 
 	@Override
 	public Object visit(SimpleNode node, Object data) {
-		// TODO Auto-generated method stub
+		node.childrenAccept(this, data);
 		return null;
 	}
 
@@ -42,7 +20,7 @@ public class DisplayVisitor implements MiniJavaVisitor {
 
 	@Override
 	public Object visit(ASTMainClass node, Object data) {
-		System.out.println(node);
+		System.out.println(node + ": " + ((String) node.jjtGetValue()));
 		node.childrenAccept(this, data);
 		return data;
 	}
@@ -56,15 +34,20 @@ public class DisplayVisitor implements MiniJavaVisitor {
 
 	@Override
 	public Object visit(ASTClassDecl node, Object data) {
-		System.out.println(node);
+		var value = ((String[]) node.jjtGetValue());
+		String info = value[0];
+		if(value.length>1)	//if we have extends
+			info+= " -> " + value[1];
+		System.out.println(node + ": " + info);
 		node.childrenAccept(this, data);
 		return data;
 	}
 
 	@Override
 	public Object visit(ASTVarDecl node, Object data) {
-		System.out.println(node);
-		node.childrenAccept(this, data);
+		String[] type = new String[1];
+		node.childrenAccept(this, type);
+		System.out.println(node + ": " + ((String) node.jjtGetValue()) + ":" + type[0]);
 		return data;
 	}
 
@@ -90,8 +73,10 @@ public class DisplayVisitor implements MiniJavaVisitor {
 	}
 
 	@Override
-	public Object visit(ASTVarType node, Object data) {
-		System.out.println(node);
+	public Object visit(ASTType node, Object data) {
+		if(data != null)
+			((String[]) data)[0] = (String) node.jjtGetValue();
+		System.out.println(node + ": " + (String) node.jjtGetValue());
 		node.childrenAccept(this, data);
 		return data;
 	}
@@ -118,13 +103,6 @@ public class DisplayVisitor implements MiniJavaVisitor {
 	}
 
 	@Override
-	public Object visit(ASTLogFactor node, Object data) {
-		System.out.println(node);
-		node.childrenAccept(this, data);
-		return data;
-	}
-
-	@Override
 	public Object visit(ASTRelExp node, Object data) {
 		System.out.println(node);
 		node.childrenAccept(this, data);
@@ -133,7 +111,7 @@ public class DisplayVisitor implements MiniJavaVisitor {
 
 	@Override
 	public Object visit(ASTAdOp node, Object data) {
-		System.out.println(node);
+		System.out.println(node + ": " + (String) node.jjtGetValue());
 		node.childrenAccept(this, data);
 		return data;
 	}
@@ -154,7 +132,7 @@ public class DisplayVisitor implements MiniJavaVisitor {
 
 	@Override
 	public Object visit(ASTMulOp node, Object data) {
-		System.out.println(node);
+		System.out.println(node + ": " + (String) node.jjtGetValue());
 		node.childrenAccept(this, data);
 		return data;
 	}
@@ -168,14 +146,14 @@ public class DisplayVisitor implements MiniJavaVisitor {
 
 	@Override
 	public Object visit(ASTFactorRest node, Object data) {
-		System.out.println(node);
+		System.out.println(node + ": "  + (String) node.jjtGetValue());
 		node.childrenAccept(this, data);
 		return data;
 	}
 
 	@Override
 	public Object visit(ASTExpFinal node, Object data) {
-		System.out.println(node);
+		System.out.println(node + ": " + (String) node.jjtGetValue());
 		node.childrenAccept(this, data);
 		return data;
 	}
@@ -185,6 +163,12 @@ public class DisplayVisitor implements MiniJavaVisitor {
 		System.out.println(node);
 		node.childrenAccept(this, data);
 		return data;
+	}
+
+	@Override
+	public Object visit(ASTRelOp node, Object data) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

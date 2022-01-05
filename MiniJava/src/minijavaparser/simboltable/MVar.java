@@ -1,8 +1,21 @@
 package minijavaparser.simboltable;
 
-public class MVar {
+public class MVar implements TypedNode{
 	public String declName;
 	public MType declType;
-	public boolean isArray=false;
-	public int size = -1; // voi tine separat size doar pentru claritate. Pentru o mica optimizare o optiune ar fi: -1 se considera nu array, 0 array neinitializat si >0 array initializat
+	public int declLine = -1;
+	
+	@Override
+	public void setType(MType type) {
+		this.declType = type;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		
+		if(!(o instanceof MVar))
+			return false;
+		
+		return ((MVar)o).declName.equals(this.declName);
+	}
 }

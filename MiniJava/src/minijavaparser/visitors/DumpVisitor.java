@@ -1,39 +1,13 @@
 package minijavaparser.visitors;
 
-import java.util.List;
-
-import minijavaparser.ASTAdOp;
-import minijavaparser.ASTAndCond;
-import minijavaparser.ASTArExp;
-import minijavaparser.ASTClassDecl;
-import minijavaparser.ASTExpFinal;
-import minijavaparser.ASTExpList;
-import minijavaparser.ASTFactor;
-import minijavaparser.ASTFactorRest;
-import minijavaparser.ASTFormalList;
-import minijavaparser.ASTFormalRest;
-import minijavaparser.ASTLogFactor;
-import minijavaparser.ASTMainClass;
-import minijavaparser.ASTMainFuncDecl;
-import minijavaparser.ASTMethodDecl;
-import minijavaparser.ASTMulOp;
-import minijavaparser.ASTOrCond;
-import minijavaparser.ASTProgram;
-import minijavaparser.ASTRelExp;
-import minijavaparser.ASTStatement;
-import minijavaparser.ASTTerm;
-import minijavaparser.ASTVarDecl;
-import minijavaparser.ASTVarType;
-import minijavaparser.MiniJavaVisitor;
-import minijavaparser.SimpleNode;
-import minijavaparser.Token;
+import minijavaparser.*;
 
 public class DumpVisitor implements MiniJavaVisitor {
 
 	
 	@Override
 	public Object visit(SimpleNode node, Object data) {
-		// TODO Auto-generated method stub
+		node.childrenAccept(this, data);
 		return null;
 	}
 	
@@ -86,7 +60,7 @@ public class DumpVisitor implements MiniJavaVisitor {
 	}
 
 	@Override
-	public Object visit(ASTVarType node, Object data) {
+	public Object visit(ASTType node, Object data) {
 		return dumpVisitExecute(node,data);
 	}
 
@@ -106,15 +80,15 @@ public class DumpVisitor implements MiniJavaVisitor {
 	}
 
 	@Override
-	public Object visit(ASTLogFactor node, Object data) {
-		return dumpVisitExecute(node,data);
-	}
-
-	@Override
 	public Object visit(ASTRelExp node, Object data) {
 		return dumpVisitExecute(node,data);
 	}
-
+	
+	@Override
+	public Object visit(ASTRelOp node, Object data) {
+		return dumpVisitExecute(node,data);
+	}
+	
 	@Override
 	public Object visit(ASTAdOp node, Object data) {
 		return dumpVisitExecute(node,data);
@@ -154,5 +128,9 @@ public class DumpVisitor implements MiniJavaVisitor {
 	public Object visit(ASTExpList node, Object data) {
 		return dumpVisitExecute(node,data);
 	}
+
+	
+
+	
 
 }

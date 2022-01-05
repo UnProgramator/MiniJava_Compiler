@@ -16,17 +16,17 @@ public class MainClass
 	    	//root.dump("+");
 
 			MainFrame frame=new MainFrame(root);
-			frame.setVisible(true);	
+			//frame.setVisible(true);	
 	    	
-	    	MiniJavaVisitor vis = new DumpVisitor();
+	    	MiniJavaVisitor vis = new DomainAnalysisVisitor();
 	    	
 	    	root.jjtAccept(vis, null);
 			
-			System.out.println("Thank you.");
+			System.out.println("Compilation process completed with success");
 	    } 
 	    catch(Exception e)
 	    {									      
-			System.err.println("Oops.");
+			System.err.println("Discrepancy detected");
 			System.err.println(e.getMessage());
 			e.printStackTrace();
 	    }
