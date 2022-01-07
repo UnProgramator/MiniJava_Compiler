@@ -4,10 +4,15 @@ import java.util.LinkedList;
 
 public class MClass implements VariableContainer{
 	public String declName;
+	public MType classAsType;
 	public MType superclass = null;
 	
 	public LinkedList<MFunc> metods = new LinkedList<MFunc>();
 	public LinkedList<MVar> fields = new LinkedList<MVar>();
+	
+	public MType getAsType() {
+		return classAsType;
+	}
 	
 	@Override
 	public boolean addVar(MVar newVar) {
@@ -19,7 +24,6 @@ public class MClass implements VariableContainer{
 		else
 			return false;
 	}
-	
 	
 	public MVar getField(MVar otherVar) {
 		for(var field : fields) {
@@ -65,6 +69,18 @@ public class MClass implements VariableContainer{
 		
 		if(superclass != null && superclass.declType != null)
 			return superclass.declType.getMethod(name, params);
+		
+		return null;
+	}
+	
+	public MFunc getMethodWithSignature(String name, LinkedList<MType> paramsType) {
+		for(var func : metods) { //check in the current class
+			if(func.hasSignature(name, paramsType))
+				return func;
+		}
+		
+		if(superclass != null && superclass.declType != null)
+			return superclass.declType.getMethodWithSignature(name, paramsType);
 		
 		return null;
 	}

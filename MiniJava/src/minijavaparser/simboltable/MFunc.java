@@ -52,14 +52,39 @@ public class MFunc implements VariableContainer, TypedNode{
 	}
 	
 	public boolean equals(String name, LinkedList<MVar> params) {
-		if (declName != name)
+		if (!declName.equals(name))
 			return false;
-
+		
+		if(params == null)
+			if(parameters.size() == 0)
+				return true;
+			else
+				return false;
+		
 		if (parameters.size() != params.size())
 			return false;
 
 		for (int i = 0; i < params.size(); i++)
 			if (!parameters.get(i).equals(params.get(i)))
+				return false;
+		return true;
+	}
+	
+	public boolean hasSignature(String name, LinkedList<MType> params) {
+		if (!declName.equals(name))
+			return false;
+		
+		if(params == null)
+			if(parameters.size() == 0)
+				return true;
+			else
+				return false;
+
+		if (parameters.size() != params.size())
+			return false;
+
+		for (int i = 0; i < params.size(); i++)
+			if (!parameters.get(i).declType.equals(params.get(i)))
 				return false;
 		return true;
 	}

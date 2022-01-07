@@ -140,7 +140,7 @@ public class VariableCheckVisitor implements MiniJavaVisitor {
 	@Override
 	public Object visit(ASTFactorRest node, Object data) {
 		node.childrenAccept(this, data); //verify  [Exp()]
-		// nothing to do for id() and .length not verified here; for id should know the type the var on which is defined!
+		// nothing to do for [], .id() or .length not verified here; for id should know the type the var on which is defined! Only check subexpresions
 		return null;
 	}
 
@@ -155,11 +155,11 @@ public class VariableCheckVisitor implements MiniJavaVisitor {
 		}
 		//else if it's one of the others variants we test which
 		Object[] whatOp = (Object[]) node.jjtGetValue();
-		if(((String)whatOp[0]).startsWith("Object:")) { // id
+		if(((String)whatOp[0]).startsWith("Object")) { // id
 			if(!SymbolTable.varDefined(((Token)whatOp[1]).image, (MFunc)data))
 				throw new VariableNotDefinedException(((Token)whatOp[1]).image,((Token)whatOp[1]).beginLine);
 		}
-		else if(((String)whatOp[0]).startsWith("New Op:")) { //new id()
+		else if(((String)whatOp[0]).startsWith("New Op")) { //new id()
 			if(SymbolTable.findClass(((Token)whatOp[1]).image) == null) {
 				throw new TypeNotDefinedButUsedException(((Token)whatOp[1]).image,((Token)whatOp[1]).beginLine);
 			}

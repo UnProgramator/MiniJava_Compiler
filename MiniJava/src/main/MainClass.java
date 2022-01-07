@@ -21,6 +21,10 @@ public class MainClass
 	    	MiniJavaVisitor vis = new DomainAnalysisVisitor();
 	    	
 	    	root.jjtAccept(vis, null);
+	    	
+	    	vis = new TypeAnalysisVisitor();
+	    	
+	    	root.jjtAccept(vis, null);
 			
 			System.out.println("Compilation process completed with success");
 	    } 

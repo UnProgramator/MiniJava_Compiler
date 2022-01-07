@@ -98,12 +98,14 @@ public class SymbolTable {
 		type.declType = newClass;
 		type.notDefined = false;
 		newClass.superclass = findType(superclass);
+		newClass.classAsType = type;
 		return newClass;
 	}
 	
 	public static MFunc addNewMethod(String methodName, LinkedList<MVar> params, MClass classRef) {
 		
-		if(classRef.getMethod(methodName, params) != null) // check for the asked signature
+		MFunc method = classRef.getMethod(methodName, params); // check for the asked signature
+		if(method != null && method.parent.declName.equals(classRef.declName)) //check if the function exists and if it's in this class, not in a superclass
 			return null; // redefinition!
 		
 		//if we arive here => method name is valid;
