@@ -18,13 +18,13 @@ public class MainClass
 			MainFrame frame=new MainFrame(root);
 			//frame.setVisible(true);	
 	    	
-	    	MiniJavaVisitor vis = new DomainAnalysisVisitor();
+	    	MiniJavaVisitor vis = new DumpVisitor();
 	    	
 	    	root.jjtAccept(vis, null);
 	    	
-	    	vis = new TypeAnalysisVisitor();
+	    	//vis = new TypeAnalysisVisitor();
 	    	
-	    	root.jjtAccept(vis, null);
+	    	//root.jjtAccept(vis, null);
 			
 			System.out.println("Compilation process completed with success");
 	    } 

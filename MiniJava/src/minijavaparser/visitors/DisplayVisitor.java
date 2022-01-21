@@ -20,7 +20,7 @@ public class DisplayVisitor implements MiniJavaVisitor {
 
 	@Override
 	public Object visit(ASTMainClass node, Object data) {
-		System.out.println(node + ": " + ((String) node.jjtGetValue()));
+		System.out.println(node + ": " + ((Token)node.jjtGetValue()).image);
 		node.childrenAccept(this, data);
 		return data;
 	}
